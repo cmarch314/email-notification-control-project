@@ -26,10 +26,13 @@ import javax.mail.Flags.Flag;
 
 import org.jsoup.Jsoup;
 
-
+/*
+ * this class is customized email object for this project.
+ * from email object, the class stores subject, content, flags and parsed data
+ * also implementing Serializable object to be stored in hash map.
+ */
 public class MessageData implements java.io.Serializable
 {
-	
 	/**
 	 * 
 	 */
@@ -116,15 +119,9 @@ public class MessageData implements java.io.Serializable
 		return this.sentDate;
 	}
 	
-	
-	
-	
 	private HashSet<String> getAddresses(Address[] addresses)
 	{
-		HashSet<String> senderArray = new HashSet<String>();
-		
-		
-		
+		HashSet<String> senderArray = new HashSet<String>();	
 		for (int i = 0; i < addresses.length; i++)
 		{
 			String senderString = addresses[i].toString();
@@ -136,14 +133,12 @@ public class MessageData implements java.io.Serializable
 			}
 			senderArray.add(senderString);
 		}
-		
 		return senderArray;
 	}
-	
-	
-	
-	
-	
+	/*
+	 * this is message Parser, the message content can be nested objects with duplicated contents as different form
+	 * it can be text/plain, text/html with same text content. be careful
+	 */
 	private String getText(Message message) throws MessagingException, IOException 
 	{
 		int depth = 0;
@@ -151,14 +146,12 @@ public class MessageData implements java.io.Serializable
 		
 		if(message.isMimeType("multipart/*"))
 		{
-			
 //			System.out.println("Multipart :" + message.getContentType());
 			Multipart multipart = (Multipart) message.getContent();
 			int j = 0;
 			if(message.isMimeType("multipart/alternative"))
 			{
 				j = 1;
-//				System.out.println("Alternative skipped");
 			
 			}
 			while( j < multipart.getCount()) 
@@ -168,22 +161,17 @@ public class MessageData implements java.io.Serializable
 				if (disposition != null && (disposition.equalsIgnoreCase("ATTACHMENT"))) 
 				{        
 					this.flag_attachment = true;
-	//				System.out.println("Attachment! ");
 				}
 				content += getText(bodyPart,depth+1);
 				j++;
 			}
-			
-			
 		}
 		else if(message.isMimeType("text/plain"))
 		{
-			 //System.out.println("SinglePart "+message.getContentType());
 			 content = (message.getContent()).toString();
 		}
 		else if(message.isMimeType("text/html"))
 		{
-			 //System.out.println("SinglePart "+message.getContentType());
 			 content = (message.getContent()).toString();
 			 content = Jsoup.parse(content).text();
 		}
@@ -193,15 +181,12 @@ public class MessageData implements java.io.Serializable
 		}
 		return content;
 	}
-		
+	/*
+	 * recursive part to deal with nested form.
+	 */
 	private String getText(Part p,int depth) throws MessagingException, IOException 
 	{
 		String s = "";	
-		/*
-		for(int i = 0 ; i < depth ; i++)
-			System.out.print("     ");
-		System.out.println("getText Part:"+p.getContentType());
-		*/
 		if (p.isMimeType("TEXT/plain"))
 		{	
 			 s = (p.getContent()).toString();
@@ -216,7 +201,6 @@ public class MessageData implements java.io.Serializable
 		else if (p.isMimeType("multipart/alternative")) 
 		{
 			Multipart mp = (Multipart)p.getContent();
-			//System.out.println("Alternative Skipped");
 			for (int i = 1; i < mp.getCount(); i++) 
 			{
 			    s += getText(mp.getBodyPart(i),depth+1);
@@ -233,7 +217,6 @@ public class MessageData implements java.io.Serializable
 		else if(p.isMimeType("image/*"))
 		{
 			this.flag_image = true;
-			//System.out.println("image Found");
 		}
 		
 		return s;
